@@ -1,0 +1,35 @@
+# Local stack: `docker compose up --build` then open http://localhost:8080
+services:
+  mongo:
+    image: mongo:7
+    volumes: [mongo-data:/data/db]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  app:
+    build: .
+    ports: ["8080:8080"]
+    depends_on:
+      mongo: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      MONGODB_URI: mongodb://mongo:27017
+      MONGODB_DB: livepoll
+      REDIS_URL: redis://redis:6379
+      # Local-only default. Generate a real one for any deployment: openssl rand -hex 32
+      JWT_SECRET: ${JWT_SECRET:-local-dev-only-secret-change-me-before-deploying}
+      ALLOWED_ORIGINS: http://localhost:8080
+      # Behind Docker's bridge network the client IP arrives from a private address.
+      TRUSTED_PROXIES: 172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
+
+volumes:
+  mongo-data:

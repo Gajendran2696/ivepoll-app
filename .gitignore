@@ -1,0 +1,7 @@
+node_modules/
+frontend/dist/
+backend/livepoll
+backend/.env
+.env
+*.log
+.DS_Store
